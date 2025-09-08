@@ -65,10 +65,10 @@ Evalué tres opciones principales:
 - Warnings del navegador inmediatos
 - Tiempo perdido reconfigurando después
 
-**✅ Solución Aplicada**: 
+**✅ Solución Aplicada**:
 Implementé SSL desde el primer día con Let's Encrypt, configurando redirects automáticos HTTP→HTTPS
 
-**📚 Lección Crítica**: 
+**📚 Lección Crítica**:
 HTTPS no es opcional en 2024/2025. Es estándar mínimo desde el minuto 1, no "mejora futura"
 
 ### **Error #2: Permisos "Fáciles" 777**
@@ -122,21 +122,21 @@ Diseñé una arquitectura web organizada con separación clara de responsabilida
 <VirtualHost *:PUERTO_PERSONALIZADO>
     ServerName mi-portfolio.dominio.org
     DocumentRoot /var/www/portfolio
-    
+
     # Logs separados para troubleshooting
     ErrorLog ${APACHE_LOG_DIR}/portfolio_error.log
     CustomLog ${APACHE_LOG_DIR}/portfolio_access.log combined
-    
+
     # Headers de seguridad básicos
     Header always set X-Content-Type-Options nosniff
     Header always set X-Frame-Options DENY
     Header always set X-XSS-Protection "1; mode=block"
-    
+
     # Configuración PHP
     <FilesMatch \.php$>
         SetHandler application/x-httpd-php
     </FilesMatch>
-    
+
     # Permisos de directorio
     <Directory /var/www/portfolio>
         Options Indexes FollowSymLinks
@@ -167,11 +167,11 @@ header('Access-Control-Allow-Origin: *');
 
 function getBasicSystemInfo() {
     $data = [];
-    
+
     // CPU Load Average
     $load = sys_getloadavg();
     $data['cpu_load'] = round($load[0], 2);
-    
+
     // Memory usage básico
     $memory = shell_exec('free -m | grep "Mem:"');
     if ($memory) {
@@ -182,14 +182,14 @@ function getBasicSystemInfo() {
             'free' => (int)$mem_info[3]
         ];
     }
-    
+
     // Uptime
     $uptime = shell_exec('uptime -p');
     $data['uptime'] = trim($uptime);
-    
+
     // Timestamp
     $data['timestamp'] = date('Y-m-d H:i:s');
-    
+
     return $data;
 }
 
@@ -218,7 +218,7 @@ class PortfolioMonitoring {
         this.updateInterval = 10000; // 10 segundos
         this.init();
     }
-    
+
     async fetchSystemData() {
         try {
             const response = await fetch(this.apiEndpoint);
@@ -229,19 +229,19 @@ class PortfolioMonitoring {
             return null;
         }
     }
-    
+
     updateUI(data) {
         if (!data || !data.success) return;
-        
+
         const info = data.data;
-        
+
         // Update CPU info
         const cpuElement = document.getElementById('cpu-load');
         if (cpuElement) {
             cpuElement.textContent = `${info.cpu_load}`;
             cpuElement.className = this.getLoadClass(info.cpu_load);
         }
-        
+
         // Update memory info
         if (info.memory) {
             const memUsed = document.getElementById('memory-used');
@@ -249,27 +249,27 @@ class PortfolioMonitoring {
             if (memUsed) memUsed.textContent = `${info.memory.used}MB`;
             if (memTotal) memTotal.textContent = `${info.memory.total}MB`;
         }
-        
+
         // Update uptime
         const uptimeElement = document.getElementById('uptime');
         if (uptimeElement) uptimeElement.textContent = info.uptime;
-        
+
         // Update timestamp
         const timestampElement = document.getElementById('last-update');
         if (timestampElement) timestampElement.textContent = info.timestamp;
     }
-    
+
     getLoadClass(load) {
         if (load < 1.0) return 'load-low';
         if (load < 2.0) return 'load-medium';
         return 'load-high';
     }
-    
+
     async init() {
         // Initial update
         const data = await this.fetchSystemData();
         this.updateUI(data);
-        
+
         // Set up periodic updates
         setInterval(async () => {
             const data = await this.fetchSystemData();
