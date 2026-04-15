@@ -1,0 +1,15 @@
+# Local editor/workspace files
+.vscode/
+*.code-workspace
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
