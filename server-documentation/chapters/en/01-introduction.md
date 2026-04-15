@@ -1,92 +1,87 @@
-# Project Introduction
+# 1. Introduction and goals
 
-## Objectives
+## What this guide is
 
-This project documents the complete implementation of a professional server using the **Orange Pi 5 Plus** single-board computer with **Ubuntu Server 24.04 LTS ARM64**.
+This documentation explains, in a practical way and from scratch, how to build a personal self-hosting server on low-power ARM64 hardware.
 
-### Main Goals
+The guide is designed for beginners and for anyone interested in understanding a real working flow: hardware choice, architecture, security, containers, and deployment.
 
-- Deploy a production-ready server environment on ARM64 architecture
-- Implement containerized services using Docker
-- Configure advanced security with SSL/TLS, SSH hardening, and Fail2Ban
-- Create comprehensive monitoring and logging systems
-- Document the entire process for future reference and scaling
+## Why this project
 
-## Justification
+The main goal is to build a stable 24/7 platform to:
 
-### Why Orange Pi 5 Plus?
+- Learn infrastructure and operations through real use cases.
+- Publish personal projects without relying fully on third-party platforms.
+- Centralize personal services, such as private cloud storage.
+- Test new applications without breaking the base environment.
 
-The Orange Pi 5 Plus offers exceptional value for professional server applications:
+## Design criteria
 
-- **Powerful ARM64 Performance**: RK3588 octa-core processor (4×A76 + 4×A55)
-- **Generous Memory**: Up to 32GB LPDDR5 RAM
-- **Multiple Storage Options**: eMMC, microSD, NVMe M.2 2280 SSD support
-- **Rich Connectivity**: 2×2.5G Ethernet, USB 3.0, HDMI 2.1
-- **Energy Efficient**: Low power consumption ideal for 24/7 operations
-- **Cost Effective**: Professional server capabilities at fraction of traditional server costs
+The solution is based on four priorities:
 
-### Why Ubuntu Server 24.04 LTS?
+1. Enough performance for multiple concurrent services.
+2. Controlled power consumption for continuous operation.
+3. Simple scalability to grow in stages.
+4. Clear, documented, and reproducible maintenance.
 
-- **Long Term Support**: 5 years of security updates and maintenance
-- **ARM64 Optimization**: Native support for ARM64 architecture
-- **Container Ready**: Optimized for Docker and containerization
-- **Enterprise Grade**: Proven stability for production environments
-- **Extensive Documentation**: Large community and professional support
+## Hardware choice summary
 
-## Project Scope
+Choosing an ARM64 board with 16 GB RAM and a 1 TB NVMe SSD answers specific needs:
 
-### Infrastructure Components
+- Enough memory to run multiple self-hosting, smart-home, and custom app workloads without saturating the system.
+- Fast storage and enough capacity for personal cloud use cases.
+- Lower energy cost compared with alternatives that typically consume more in 24/7 operation.
 
-1. **Base System Setup**
-   - Ubuntu Server 24.04 LTS ARM64 installation
-   - Initial system configuration and updates
-   - Network configuration and optimization
+Security note: this chapter avoids identifiable production details. When specific technical values appear, they are fictional examples.
 
-2. **Security Implementation**
-   - SSH key-based authentication with disabled password login
-   - Fail2Ban intrusion prevention
-   - UFW firewall configuration
-   - SSL/TLS certificate management with Let's Encrypt
+## What can be built on a platform like this
 
-3. **Service Deployment**
-   - Docker and Docker Compose setup
-   - Seafile cloud storage service
-   - Portainer container management
-   - MySQL database server
-   - Apache web server with PHP 8.3
+Common software and use-case examples:
 
-4. **Monitoring and Maintenance**
-   - Netdata real-time monitoring
-   - Log aggregation and analysis
-   - Automated backup strategies
-   - Performance optimization
+- Personal cloud: Nextcloud.
+- Smart home: Home Assistant.
+- Secure remote access: VPN.
+- Multimedia: local or remote streaming.
+- Web publishing: static sites or containerized applications.
+- Operations and observability: container management panel and monitoring.
 
-### Expected Outcomes
+## Scope of this guide
 
-- Fully functional production server running on ARM64 architecture
-- Secure, monitored, and maintainable infrastructure
-- Scalable foundation for future service expansion
-- Comprehensive documentation for replication and maintenance
+This guide focuses on what is needed for a first functional and secure version.
 
-## Technical Requirements
+Included:
 
-### Hardware Specifications
-- Orange Pi 5 Plus (16GB RAM recommended)
-- High-speed microSD card (Class 10, 64GB minimum)
-- Optional: NVMe M.2 SSD for enhanced performance
-- Reliable network connection
-- Adequate cooling solution
+- Goal-driven hardware decisions.
+- Base architecture to separate services and data.
+- Initial security hardening.
+- Docker-based deployment and maintenance.
+- HTTPS publishing with operational best practices.
 
-### Software Dependencies
-- Ubuntu Server 24.04 LTS ARM64
-- Docker Engine and Docker Compose
-- Various containerized services as detailed in subsequent chapters
+## Structure of the next chapters
 
-## Success Metrics
+- Chapter 2: hardware choice and cost/performance analysis.
+- Chapter 3: system architecture and service flow.
+- Chapter 4: security baseline and recommended controls.
+- Chapter 5: Docker and service management.
+- Chapter 6: deployment/self-hosting step by step and final validation.
+- Appendix: common errors and resolution (reference troubleshooting).
 
-- **Uptime**: Target 99.9% availability
-- **Performance**: Sub-second response times for web services
-- **Security**: Zero successful intrusion attempts
-- **Scalability**: Easy addition of new services without system rebuilding
+## Recommendations before continuing
 
-This documentation serves as both implementation guide and operational reference for maintaining and scaling this ARM64 server infrastructure.
+- Read each chapter fully before running commands.
+- Keep a change log with date, reason, and outcome.
+- Apply changes in small blocks and validate each step.
+- Use official documentation for critical commands.
+
+## Important precautions
+
+- Do not publish credentials, tokens, keys, or private paths.
+- Do not copy technical examples into production without review.
+- Do not expose ports or services without justification and control.
+- Do not treat sample values in this guide as production defaults.
+
+## Note on fictional values
+
+When later chapters include examples of domains, IPs, users, ports, or credentials, those values are fictional to avoid leaks.
+
+To obtain real values in your own environment, follow each tool's official documentation and validate using your system's inspection commands.

@@ -1,0 +1,41 @@
+networks:
+  traefik-public:
+    external: true
+
+services:
+  server-doc:
+    image: nginx:1.27-alpine
+    container_name: server-doc
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/cache/nginx:size=32m
+      - /var/log/nginx:size=16m
+      - /var/run:size=4m
+      - /tmp:size=16m
+    volumes:
+      - /mnt/data/www/portfolio-projects/server-documentation:/usr/share/nginx/html:ro
+      - /mnt/data/www/portfolio-projects/server-documentation/deploy/nginx.server-doc.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - traefik-public
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.server-doc-http.rule=Host(`server-doc.duckdns.org`)"
+      - "traefik.http.routers.server-doc-http.entrypoints=web"
+      - "traefik.http.routers.server-doc-http.middlewares=server-doc-https-redirect"
+      - "traefik.http.middlewares.server-doc-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.server-doc-https-redirect.redirectscheme.permanent=true"
+      - "traefik.http.routers.server-doc.rule=Host(`server-doc.duckdns.org`)"
+      - "traefik.http.routers.server-doc.entrypoints=websecure"
+      - "traefik.http.routers.server-doc.tls=true"
+      - "traefik.http.routers.server-doc.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.server-doc.middlewares=security-headers@file"
+      - "traefik.http.services.server-doc.loadbalancer.server.port=8080"

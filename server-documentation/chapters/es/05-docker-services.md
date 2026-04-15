@@ -1,252 +1,180 @@
-# 🐳 Servicios Docker - Contenerización de Aplicaciones
+# 5. Docker y gestion de servicios
 
-## Contextualización del Problema
+## Objetivo del capitulo
 
-Para demostrar competencias en tecnologías modernas de desarrollo, necesitaba implementar servicios containerizados que simularan un entorno empresarial real. Docker se ha convertido en estándar de la industria para deployment y escalabilidad.
+En este capitulo se explica como usar Docker para desplegar servicios de forma ordenada, reproducible y mantenible.
 
-## Decisión Técnica: Stack Docker Completo
+La idea principal es pasar de "instalar cosas sueltas" a "definir infraestructura como codigo".
 
-Implementé una arquitectura de microservicios usando Docker para:
-- **Portainer**: Gestión visual de contenedores
-- **MySQL**: Base de datos relacional para aplicaciones
-- **Seafile**: Sistema de archivos distribuido como PoC cloud storage
-- **Monitoring**: Contenedores de métricas y logging
+## Por que Docker en este proyecto
 
-## Proceso de Implementación
+Docker simplifica tres problemas habituales:
 
-### Instalación Docker Engine
-```bash
-# Instalación oficial Docker para ARM64
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
+1. Dependencias distintas entre servicios.
+2. Actualizaciones sin romper todo el sistema.
+3. Recuperacion rapida tras errores.
 
-# Configuración usuario sin sudo
-sudo usermod -aG docker $USER
-newgrp docker
+Con contenedores, cada servicio tiene su propio entorno y se gestiona con el mismo patron operativo.
 
-# Verificación de instalación
-docker --version
-docker run hello-world
+## Herramientas recomendadas en esta capa
+
+| Necesidad            | Recomendacion principal | Alternativa          | Cuándo usarla                       |
+| -------------------- | ----------------------- | -------------------- | ----------------------------------- |
+| Ejecutar servicios   | Docker Engine           | Podman               | Base obligatoria de la arquitectura |
+| Orquestacion local   | Docker Compose          | Compose en Portainer | Gestion de stacks por archivos      |
+| Gestion visual       | Portainer               | Cockpit con plugins  | Si prefieres panel para operar      |
+| Publicacion HTTPS    | Traefik                 | Nginx Proxy Manager  | Servicios web expuestos             |
+| Catalogo de imagenes | Docker Hub + GHCR       | Registro privado     | Descarga y versionado de imagenes   |
+
+## Conceptos operativos que debes dominar
+
+- Imagen: plantilla del servicio.
+- Contenedor: instancia en ejecucion.
+- Volumen: datos persistentes fuera del contenedor.
+- Red Docker: comunicacion controlada entre servicios.
+- Compose: archivo declarativo para levantar stacks completos.
+
+Si controlas estos cinco conceptos, puedes operar la mayoria de servicios de selfhosting.
+
+## Estructura recomendada de un stack
+
+```mermaid
+flowchart TD
+    A[docker-compose.yml] --> B[Servicio proxy]
+    A --> C[Servicio aplicacion]
+    A --> D[Servicio base de datos]
+    C --> E[(Volumen app)]
+    D --> F[(Volumen db)]
+    B --> G[Red publica]
+    C --> G
+    C --> H[Red privada]
+    D --> H
 ```
 
-### Docker Compose para Orquestación
-```bash
-# Instalación Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+## Como desplegar sin complicarte
 
-# Verificación
-docker-compose --version
-```
+### Paso 1: preparar base
 
-## Errores Cometidos y Correcciones
+1. Instalar Docker Engine.
+2. Instalar Docker Compose plugin.
+3. Verificar que el usuario puede ejecutar Docker.
 
-### Error #1: Instalación sin Consideraciones ARM64
-**Problema**: Intenté usar imágenes x86 inicialmente, resultando en errores de arquitectura.
-**Impacto**: Contenedores fallando constantemente con "exec format error".
+### Paso 2: definir servicio con Compose
 
-```bash
-# MAL - Sin especificar arquitectura
-docker run mysql:latest
+Usa un archivo por stack con:
 
-# BIEN - Especificando arquitectura ARM64
-docker run --platform linux/arm64 mysql:latest
-# O usando imágenes nativas ARM64
-docker run mysql/mysql-server:latest
-```
+- image fija por version.
+- restart policy.
+- volumenes persistentes.
+- redes separadas (publica/privada cuando aplique).
+- variables de entorno sin secretos en texto publico.
 
-**Lección**: Siempre verificar compatibilidad de arquitectura en entornos no-x86.
-
-### Error #2: Gestión de Volúmenes Inadecuada
-**Problema**: Inicialmente usé bind mounts sin planificación, causando pérdida de datos.
-**Impacto**: Pérdida completa de base de datos tras reinicio de contenedor.
-
-```bash
-# MAL - Bind mount sin backup
-docker run -v /tmp/mysql:/var/lib/mysql mysql
-
-# BIEN - Volúmenes named con backup strategy
-docker volume create mysql_data
-docker volume create mysql_config
-
-# Compose con volúmenes persistentes
-version: '3.8'
-services:
-  mysql:
-    image: mysql:latest
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - mysql_config:/etc/mysql/conf.d
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-volumes:
-  mysql_data:
-  mysql_config:
-```
-
-**Lección**: Los datos críticos requieren estrategia de persistencia desde el diseño inicial.
-
-### Error #3: Networking Sin Planificación
-**Problema**: Contenedores en red por defecto sin aislamiento ni comunicación controlada.
-**Impacto**: Exposición innecesaria de servicios y problemas de conectividad.
-
-```bash
-# Creación de red personalizada
-docker network create --driver bridge app_network
-
-# Compose con red aislada
-version: '3.8'
-services:
-  mysql:
-    networks:
-      - backend
-  web:
-    networks:
-      - frontend
-      - backend
-    ports:
-      - "XX:XX"
-
-networks:
-  frontend:
-  backend:
-    internal: true
-```
-
-**Lección**: El aislamiento de red es crucial para seguridad en microservicios.
-
-## Implementación de Servicios Críticos
-
-### Portainer para Gestión Visual
-```bash
-# Deployment Portainer
-docker volume create portainer_data
-docker run -d -p [PUERTO_PORTAINER]:9000 \
-  --name portainer \
-  --restart always \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v portainer_data:/data \
-  portainer/portainer-ce:latest
-
-# Acceso web: http://[IP_SERVIDOR]:[PUERTO_PORTAINER]
-```
-
-### MySQL con Configuración Optimizada
-```bash
-# Variables de entorno para seguridad
-echo "MYSQL_ROOT_PASSWORD=[contraseña_segura_aquí]" > .env
-echo "MYSQL_DATABASE=app_database" >> .env
-
-# Compose con optimización ARM64
-version: '3.8'
-services:
-  mysql:
-    image: mysql:8.0
-    platform: linux/arm64
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-    volumes:
-      - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
-```
-
-## Docker Compose: La Herramienta Clave
-
-Docker Compose se convirtió en la pieza fundamental del proyecto. Permite definir toda la infraestructura como código:
+Ejemplo simplificado (datos ficticios):
 
 ```yaml
-# docker-compose.yml - Stack completo
-version: '3.8'
-
 services:
-  mysql:
-    image: mysql:8.0
-    platform: linux/arm64
+  app:
+    image: app-image:1.0.0
     restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - mysql_config:/etc/mysql/conf.d
     networks:
-      - backend
-    ports:
-      - "3306:3306"
+      - public
+      - private
+    volumes:
+      - app-data:/var/lib/app
 
-  portainer:
-    image: portainer/portainer-ce:latest
+  db:
+    image: db-image:1.0.0
     restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
     networks:
-      - frontend
-    ports:
-      - "[PUERTO_PORTAINER]:9000"
-
-  web:
-    image: nginx:alpine
-    restart: unless-stopped
+      - private
     volumes:
-      - ./web:/usr/share/nginx/html
-    networks:
-      - frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - mysql
+      - db-data:/var/lib/db
 
 volumes:
-  mysql_data:
-  mysql_config:
-  portainer_data:
+  app-data:
+  db-data:
 
 networks:
-  frontend:
-  backend:
+  public:
+  private:
     internal: true
 ```
 
-### Comandos de Gestión Diaria
-```bash
-# Levantar todo el stack
-docker-compose up -d
+### Paso 3: publicar con proxy
 
-# Ver logs en tiempo real
-docker-compose logs -f
+- Si quieres automatizacion basada en etiquetas de contenedor, Traefik suele encajar mejor.
+- Si quieres panel visual para gestionar dominios y certificados, Nginx Proxy Manager suele ser mas facil al principio.
 
-# Actualizar servicios
-docker-compose pull && docker-compose up -d
+### Paso 4: validar
 
-# Backup de volúmenes
-docker run --rm -v mysql_data:/data -v $(pwd):/backup alpine tar czf /backup/mysql-backup.tar.gz /data
-```
+- El contenedor arranca sin bucles de reinicio.
+- El servicio responde en red interna.
+- HTTPS funciona en servicios publicos.
+- Datos persisten tras reinicio/recreacion.
 
-## Competencias Técnicas Desarrolladas
+## Estrategia de volumenes y datos
 
-Esta implementación demuestra competencias específicas en desarrollo moderno:
+Regla clave: si un dato importa, debe vivir en volumen persistente.
 
-**Infrastructure as Code**: Todo el entorno es reproducible con un solo comando `docker-compose up`.
+Tipos de datos a persistir:
 
-**Arquitectura de Sistemas**: Separación de redes, gestión de secretos, y estrategias de persistencia muestran comprensión de sistemas complejos.
+- Base de datos.
+- Archivos subidos por usuarios.
+- Configuraciones de aplicacion.
 
-**Resolución de Problemas**: Los errores documentados (ARM64, volúmenes, networking) son problemas reales que enfrentan los desarrolladores.
+Buenas practicas:
 
-**Escalabilidad**: La arquitectura permite añadir nuevos servicios modificando solo el compose file, sin interrumpir servicios existentes.
+- No usar rutas temporales para datos criticos.
+- Etiquetar volumenes con nombres claros.
+- Tener backup y prueba de restauracion.
 
-## Resultados Obtenidos
+## Estrategia de redes
 
-- **Tiempo de despliegue**: Stack completo operacional en pocos minutos
-- **Gestión unificada**: Un solo archivo YAML para toda la infraestructura  
-- **Backup automatizado**: Scripts de respaldo integrados en el workflow
-- **Monitoreo visual**: Portainer proporciona visibilidad completa del estado
+Para evitar exposiciones innecesarias:
 
-Esta implementación Docker constituye la base técnica sobre la cual se construyó todo el proyecto de servidor personal.
-```
+- Servicios publicos en red publica a traves de proxy.
+- Base de datos solo en red privada interna.
+- Herramientas de administracion preferiblemente no publicas.
+
+Si un servicio no necesita internet, no debe estar en la red publica.
+
+## Actualizaciones sin dolor
+
+Proceso recomendado:
+
+1. Revisar changelog de imagen.
+2. Crear backup previo.
+3. Actualizar servicio concreto, no todo a la vez.
+4. Verificar logs y salud.
+5. Si falla, rollback inmediato a version anterior.
+
+## Errores frecuentes en Docker
+
+1. Usar latest en todos los servicios sin control de versiones.
+2. Exponer puertos internos por comodidad.
+3. Guardar secretos en repositorio.
+4. No separar redes por tipo de trafico.
+5. No comprobar restauracion de backups.
+
+## Checklist de calidad para cada stack
+
+- Imagen fijada por version.
+- Politica de reinicio definida.
+- Volumenes persistentes declarados.
+- Redes separadas segun necesidad.
+- Secretos fuera de archivos publicos.
+- Logs y health checks revisados.
+- Backup y restauracion probados.
+
+## Recomendaciones finales
+
+- Mantener stacks pequenos y con responsabilidad unica.
+- Documentar cada stack con objetivo y dependencias.
+- No desplegar varios cambios grandes a la vez.
+- Priorizar estabilidad sobre cantidad de servicios.
+
+## Nota sobre datos inventados
+
+Cualquier dominio, IP, usuario, puerto, ruta o credencial que aparezca como ejemplo en este capitulo es inventado.
+
+Para valores reales, consulta documentacion oficial de Docker, del proxy elegido y de cada servicio desplegado.

@@ -1,127 +1,87 @@
-# 1. Introducción al Proyecto
+# 1. Introduccion y objetivos
 
-## 🎯 **Objetivo Personal y Profesional**
+## Que es esta guia
 
-Este proyecto surge de la necesidad de crear una **plataforma de desarrollo personal** que sirviera como:
+Esta documentacion explica, de forma practica y desde cero, como construir un servidor personal para selfhosting sobre hardware ARM64 de bajo consumo.
 
-- **Portfolio técnico**: Demostración práctica de habilidades en administración de sistemas
-- **Entorno de desarrollo**: Stack completo para proyectos web (PHP, Java, Node.js)
-- **Laboratorio de aprendizaje**: Experimentación con tecnologías modernas
-- **Servidor doméstico**: Servicios 24/7 con acceso remoto seguro
+La guia esta pensada para un perfil principiante o para cualquier persona interesada en entender un flujo real de trabajo: decision de hardware, arquitectura, seguridad, contenedores y despliegue.
 
-## 🚀 **Motivación del Proyecto**
+## Por que este proyecto
 
-Como desarrollador en formación, buscaba una solución que me permitiera:
+El objetivo principal es tener una plataforma estable 24/7 para:
 
-1. **Experiencia práctica** con administración de servidores Linux
-2. **Stack de desarrollo completo** accesible desde cualquier ubicación
-3. **Portfolio técnico** para demostrar competencias de desarrollo y DevOps
-4. **Plataforma de experimentación** sin limitaciones de hosting tradicional
+- Aprender infraestructura y operaciones con casos reales.
+- Publicar proyectos propios sin depender de terceros.
+- Centralizar servicios personales (por ejemplo nube privada).
+- Probar nuevas aplicaciones sin romper el entorno base.
 
-## 📋 **Alcance y Objetivos**
+## Criterios de diseno
 
-### **Objetivos Principales**
+La solucion se define por cuatro prioridades:
 
-- ✅ **Servidor estable 24/7** con alta disponibilidad y uptime excelente
-- ✅ **Stack de desarrollo completo** (Apache, PHP 8.3, MySQL 8.0, Java 17, Node.js)
-- ✅ **Acceso remoto seguro** vía SSH con autenticación por claves
-- ✅ **Servicios en la nube** (Seafile para almacenamiento privado)
-- ✅ **Monitorización en tiempo real** con alertas automáticas
-- ✅ **Portfolio web desplegado** y accesible públicamente
+1. Rendimiento suficiente para varios servicios concurrentes.
+2. Consumo electrico contenido para operacion continua.
+3. Escalabilidad simple para crecer por fases.
+4. Mantenimiento claro, documentado y reproducible.
 
-### **Objetivos Secundarios**
+## Resumen de la eleccion de hardware
 
-- ⚡ **Optimización de rendimiento** para hardware ARM64
-- 🔒 **Seguridad avanzada** con Fail2Ban y SSL/TLS
-- 🐳 **Containerización** de servicios con Docker
-- 📊 **Documentación completa** del proceso y decisiones técnicas
+La eleccion de una placa ARM64 con 16 GB de RAM y SSD NVMe de 1 TB responde a necesidades concretas:
 
-## 🎨 **Arquitectura del Proyecto**
+- Memoria amplia para ejecutar varios servicios de selfhosting, domotica y aplicaciones personalizadas sin saturar el sistema.
+- Almacenamiento rapido y con capacidad suficiente para casos de uso de nube personal.
+- Coste energetico menor frente a alternativas tipicas que suelen consumir mas en funcionamiento 24/7.
 
-### **Stack Tecnológico Seleccionado**
+Nota de seguridad: este capitulo evita datos identificables del entorno real. Cuando aparecen valores tecnicos concretos, se usan ejemplos ficticios.
 
-```
-┌─────────────────────────────────────────┐
-│           Hardware Layer                │
-│    Orange Pi 5 Plus (RK3588 ARM64)     │
-│      16GB RAM + NVMe SSD + microSD     │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│        Operating System                 │
-│      Ubuntu Server 24.04.2 LTS         │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│         Core Services                   │
-│   SSH + Nginx + Docker + MySQL 8.0     │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│       Development Stack                 │
-│  Apache + PHP 8.3 + Java 17 + Node.js  │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│      Application Services               │
-│  Seafile + Portainer + Portfolio Web    │
-└─────────────────────────────────────────┘
-```
+## Que se puede montar en una plataforma asi
 
-### **Servicios Implementados**
+Ejemplos habituales de software y casos de uso:
 
-| Servicio | Puerto | Propósito | Estado |
-|----------|--------|-----------|---------|
-| **SSH** | [SSH_CUSTOM_PORT] | Acceso remoto seguro | ✅ Activo |
-| **HTTP/HTTPS** | 80/443 | Proxy reverso Nginx | ✅ Activo |
-| **Seafile** | 8080 | Almacenamiento nube privado | ✅ Activo |
-| **Portainer** | 9000 | Gestión contenedores Docker | ✅ Activo |
-| **Portfolio** | 80 | Aplicación web PHP personal | ✅ Activo |
-| **Netdata** | 19999 | Monitorización en tiempo real | ✅ Activo |
-| **MySQL** | 3306 | Base de datos (solo local) | ✅ Activo |
+- Nube personal: Nextcloud.
+- Domotica: Home Assistant.
+- Acceso remoto seguro: VPN.
+- Multimedia: streaming en red local o remota.
+- Publicacion web: sitios estaticos o aplicaciones en contenedores.
+- Operacion y observabilidad: panel de gestion de contenedores y monitorizacion.
 
-## 🌟 **Características Destacadas**
+## Alcance de esta guia
 
-### **Rendimiento Optimizado**
-- **ARM64 nativo**: Compilaciones y optimizaciones específicas
-- **NVMe SSD**: Almacenamiento de alta velocidad para aplicaciones
-- **16GB RAM**: Capacidad suficiente para múltiples servicios concurrentes
-- **Red Gigabit**: Conectividad estable para servicios remotos
+Esta guia se centra en lo necesario para una primera version funcional y segura.
 
-### **Seguridad Implementada**
-- **SSH con claves ED25519**: Autenticación sin contraseñas
-- **Puerto SSH no estándar** ([SSH_CUSTOM_PORT]): Reducción de ataques automatizados
-- **Fail2Ban activo**: Protección contra ataques de fuerza bruta
-- **SSL/TLS Let's Encrypt**: Cifrado en todas las comunicaciones web
-- **Firewall UFW**: Control granular de acceso a puertos
+Incluye:
 
-### **Alta Disponibilidad**
-- **Uptime 24/7**: Servidor diseñado para funcionamiento continuo
-- **Backups automatizados**: Sistema Borg para recuperación de datos
-- **Monitorización**: Netdata con métricas en tiempo real
-- **DNS dinámico**: DuckDNS para acceso externo estable
+- Decision de hardware basada en objetivos.
+- Arquitectura base para separar servicios y datos.
+- Endurecimiento de seguridad inicial.
+- Uso de Docker para despliegue y mantenimiento.
+- Publicacion de servicios con HTTPS y buenas practicas.
 
-## 📈 **Resultados Esperados**
+## Estructura del resto de capitulos
 
-Al completar este proyecto, se habrá logrado:
+- Capitulo 2: eleccion de hardware y analisis coste-rendimiento.
+- Capitulo 3: arquitectura del sistema y flujo de servicios.
+- Capitulo 4: seguridad base y controles recomendados.
+- Capitulo 5: Docker y gestion de servicios.
+- Capitulo 6: despliegue/selfhosting paso a paso y validaciones finales.
+- Anexo: errores frecuentes y resolucion (troubleshooting de referencia).
 
-1. **✅ Servidor funcional**: Orange Pi 5 Plus operativo como servidor de desarrollo
-2. **✅ Portfolio desplegado**: Aplicación web personal accesible públicamente  
-3. **✅ Experiencia técnica**: Conocimientos prácticos en administración Linux
-4. **✅ Documentación**: Guía completa replicable por otros desarrolladores
-5. **✅ Plataforma escalable**: Base sólida para futuros proyectos y servicios
+## Recomendaciones antes de seguir
 
-## 🔄 **Próximos Capítulos**
+- Leer cada capitulo completo antes de ejecutar comandos.
+- Mantener una hoja de cambios con fecha, motivo y resultado.
+- Aplicar cambios por bloques pequenos y validar en cada paso.
+- Usar siempre documentacion oficial para comandos criticos.
 
-Esta guía está estructurada para seguir el proceso completo paso a paso:
+## Precauciones importantes
 
-- **Capítulo 2**: Especificaciones y justificación del hardware elegido
-- **Capítulo 3**: Instalación y configuración inicial de Ubuntu Server
-- **Capítulo 4**: Configuración de red, seguridad y acceso remoto
-- **Capítulo 5**: Implementación de servicios Docker y containerización
-- **Capítulo 6**: Despliegue del portfolio web y stack de desarrollo
-- **Capítulo 7**: Monitorización, logs y mantenimiento del sistema
-- **Capítulo 8**: Resolución de problemas comunes y troubleshooting
-- **Capítulo 9**: Lecciones aprendidas, errores y mejores prácticas
-- **Capítulo 10**: Futuras mejoras y optimizaciones
+- No publicar credenciales, tokens, claves ni rutas privadas.
+- No copiar ejemplos tecnicos con valores reales sin revisarlos.
+- No abrir puertos ni servicios sin justificacion y control.
+- No tratar ejemplos de este documento como valores finales de produccion.
 
----
+## Nota sobre datos inventados
 
-> **💡 Nota**: Este proyecto está diseñado para ser completamente replicable. Todos los comandos, configuraciones y decisiones técnicas están documentadas para facilitar la implementación por parte de otros desarrolladores.
+Cuando en capitulos posteriores aparezcan ejemplos de dominio, IP, usuario, puertos o credenciales, esos valores seran inventados para evitar filtraciones.
 
+Para obtener valores reales en tu entorno, consulta siempre la documentacion oficial de cada herramienta y valida con comandos de inspeccion del propio sistema.

@@ -1,38 +1,69 @@
-# 📘 Orange Pi 5 Plus Server - Documentación Pública
+# Orange Pi 5 Plus Server - Documentacion publica
 
-Este proyecto contiene la **documentación técnica completa** y la web interactiva del servidor Orange Pi 5 Plus, migrada desde el repositorio privado. Aquí encontrarás:
+Proyecto de documentacion tecnica publica del servidor Orange Pi 5 Plus.
 
-- Guía paso a paso de instalación, seguridad, Docker, monitorización y troubleshooting
-- 10 capítulos técnicos en formato markdown
-- Web interactiva (index.html + assets) para consulta y aprendizaje
-- Scripts y ejemplos anonimizados
+Incluye:
 
-**Este repositorio es público y está pensado para compartir el conocimiento y las mejores prácticas de despliegue y administración de servidores ARM64.**
-
----
+- Guia paso a paso de instalacion, seguridad, Docker, monitorizacion y troubleshooting.
+- 10 capitulos en Markdown en espanol e ingles.
+- Web interactiva estatica para lectura y navegacion.
 
 ## Estructura
 
-- `index.html` — Web interactiva de la documentación
-- `assets/` — CSS, JS y recursos de la web
-- `chapters/` — Capítulos técnicos en markdown y scripts
+- index.html: shell principal de la web.
+- assets/: estilos, javascript e imagenes.
+- chapters/: capitulos en Markdown (es/en).
+- deploy/: stack de despliegue seguro para Traefik.
 
----
+## Despliegue recomendado (server-doc.duckdns.org)
 
-## Origen y migración
+Modelo elegido por simplicidad, seguridad y mantenimiento:
 
-La documentación y la web han sido migradas desde el repositorio privado `portfolio-board` para separar la infraestructura privada de los recursos educativos públicos. Si necesitas la infraestructura, scripts de gestión o el dashboard privado, consulta el repositorio privado correspondiente.
+- Contenedor Nginx estatico.
+- Reverse proxy y SSL en Traefik.
+- HTTP forzado a HTTPS.
+- Bloqueo de dotfiles y rutas sensibles a nivel Nginx.
+- Contenedor con hardening basico (read_only, no-new-privileges, tmpfs).
 
----
+Archivos de despliegue:
 
-## Enlaces
+- deploy/docker-compose.server-doc.yml
+- deploy/nginx.server-doc.conf
+- deploy/deploy-server-doc.sh
 
-- [Repositorio privado (dashboard, scripts, configs)](enlace-privado)
-- [Portfolio profesional y proyectos públicos](../)
+## Lanzar en el servidor
 
+Ejecutar en bash de Orange Pi:
 
-## Dominio provisional para enlazar
- - server-doc.duckdns.org
----
+```bash
+cd /mnt/data/www/portfolio-projects/server-documentation
+chmod +x deploy/deploy-server-doc.sh
+sudo ./deploy/deploy-server-doc.sh
+```
 
-**Actualizado:** 13 agosto 2025
+## Verificacion post-despliegue
+
+```bash
+docker ps --filter name=server-doc
+docker logs --tail 100 server-doc
+curl -I http://server-doc.duckdns.org
+curl -I https://server-doc.duckdns.org
+curl -I https://server-doc.duckdns.org/.git/config
+curl -I https://server-doc.duckdns.org/.env
+```
+
+Resultado esperado:
+
+- HTTP responde con redireccion a HTTPS.
+- HTTPS responde 200.
+- .git y .env responden 403 o 404.
+
+## Nota de idioma
+
+La web abre por defecto en espanol (ES) y permite cambio manual a ingles.
+
+## Dominio publico
+
+- https://server-doc.duckdns.org/
+
+Actualizado: 15 abril 2026

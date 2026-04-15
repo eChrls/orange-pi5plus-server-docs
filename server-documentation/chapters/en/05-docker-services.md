@@ -1,146 +1,180 @@
-# Docker Services
+# 5. Docker and service management
 
-## Docker and Container Deployment
+## Chapter goal
 
-This chapter covers the complete setup of Docker Engine, Docker Compose, and deployment of essential containerized services including Seafile, Portainer, MySQL, and supporting infrastructure on the Orange Pi 5 Plus.
+This chapter explains how to use Docker to deploy services in a structured, reproducible, and maintainable way.
 
-### Docker Installation and Setup
+The main shift is moving from "installing isolated tools" to "defining infrastructure as code".
 
-#### Docker Engine Installation
-```bash
-# Update package index
-sudo apt update
+## Why Docker in this project
 
-# Install prerequisites
-sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+Docker solves three common problems:
 
-# Add Docker's official GPG key
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+1. Different dependencies across services.
+2. Service updates without breaking the whole system.
+3. Fast recovery when something fails.
 
-# Add Docker repository for ARM64
-echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+With containers, each service has its own runtime and follows the same operational pattern.
 
-# Update package index
-sudo apt update
+## Recommended tools in this layer
 
-# Install Docker Engine
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+| Need                | Primary recommendation | Alternative               | When to use                          |
+| ------------------- | ---------------------- | ------------------------- | ------------------------------------ |
+| Run services        | Docker Engine          | Podman                    | Baseline for this architecture       |
+| Local orchestration | Docker Compose         | Compose through Portainer | Stack management by files            |
+| Visual management   | Portainer              | Cockpit with plugins      | If you prefer panel-based operations |
+| HTTPS publishing    | Traefik                | Nginx Proxy Manager       | Public web services                  |
+| Image sources       | Docker Hub + GHCR      | Private registry          | Image retrieval and versioning       |
+
+## Core concepts you should control
+
+- Image: service template.
+- Container: running instance.
+- Volume: persistent data outside container layers.
+- Docker network: controlled communication between services.
+- Compose: declarative file to run complete stacks.
+
+If you control these five concepts, you can operate most self-hosting services.
+
+## Recommended stack structure
+
+```mermaid
+flowchart TD
+    A[docker-compose.yml] --> B[Proxy service]
+    A --> C[Application service]
+    A --> D[Database service]
+    C --> E[(app volume)]
+    D --> F[(db volume)]
+    B --> G[public network]
+    C --> G
+    C --> H[private network]
+    D --> H
 ```
 
-#### Docker Post-Installation Setup
-```bash
-# Add user to docker group
-sudo usermod -aG docker $USER
+## How to deploy without overcomplicating
 
-# Enable Docker service
-sudo systemctl enable docker
-sudo systemctl start docker
+### Step 1: prepare baseline
 
-# Verify Docker installation
-docker --version
-docker compose version
+1. Install Docker Engine.
+2. Install Docker Compose plugin.
+3. Verify user can run Docker commands.
 
-# Test Docker with hello-world
-docker run hello-world
+### Step 2: define service stack with Compose
+
+Use one file per stack including:
+
+- pinned image versions.
+- restart policy.
+- persistent volumes.
+- separated networks when required (public/private).
+- environment variables without publishing secrets.
+
+Simplified example (fictional values):
+
+```yaml
+services:
+  app:
+    image: app-image:1.0.0
+    restart: unless-stopped
+    networks:
+      - public
+      - private
+    volumes:
+      - app-data:/var/lib/app
+
+  db:
+    image: db-image:1.0.0
+    restart: unless-stopped
+    networks:
+      - private
+    volumes:
+      - db-data:/var/lib/db
+
+volumes:
+  app-data:
+  db-data:
+
+networks:
+  public:
+  private:
+    internal: true
 ```
 
-#### Docker Daemon Configuration
-```bash
-# Create Docker daemon configuration
-sudo mkdir -p /etc/docker
+### Step 3: publish through a reverse proxy
 
-# Configure Docker daemon for ARM64 optimization
-sudo tee /etc/docker/daemon.json  ~/containers/mysql/docker-compose.yml  ~/containers/mysql/conf/custom.cnf  ~/containers/seafile/docker-compose.yml  conf/seafile.conf  conf/seahub_settings.py  ~/containers/portainer/docker-compose.yml  portainer_password.txt
+- If you want label-based automation, Traefik usually fits better.
+- If you want visual domain/certificate management, Nginx Proxy Manager is often simpler at first.
 
-# Deploy Portainer
-docker compose up -d
+### Step 4: validate
 
-# Verify Portainer deployment
-docker compose logs -f portainer
-```
+- Container starts without restart loops.
+- Service responds on internal network.
+- HTTPS works for public services.
+- Data persists after restart/recreation.
 
-### Redis Cache Service
+## Volumes and data strategy
 
-#### Redis Docker Compose Configuration
-```bash
-# Create Redis service configuration
-cat > ~/containers/redis/docker-compose.yml  ~/containers/redis/redis.conf  ~/containers/nginx/docker-compose.yml  ~/containers/nginx/conf/seafile.conf  ~/containers/docker-compose.yml  ~/containers/manage-services.sh  ~/containers/backup-containers.sh  ~/containers/health-check.sh > $LOG_FILE
-    echo "Container Health Alert: Unhealthy containers on $(hostname)" | mail -s "Container Alert" admin@your-domain.com
-fi
+Core rule: if data matters, it must live in a persistent volume.
 
-# Check container resource usage
-HIGH_CPU_CONTAINERS=$(docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}" | awk 'NR>1 && $2+0 > 80 {print $1}')
-if [ -n "$HIGH_CPU_CONTAINERS" ]; then
-    echo "$(date): High CPU usage containers: $HIGH_CPU_CONTAINERS" >> $LOG_FILE
-fi
+Data that should persist:
 
-HIGH_MEMORY_CONTAINERS=$(docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}" | awk 'NR>1 && $2 ~ /G/ && $2+0 > 2 {print $1}')
-if [ -n "$HIGH_MEMORY_CONTAINERS" ]; then
-    echo "$(date): High memory usage containers: $HIGH_MEMORY_CONTAINERS" >> $LOG_FILE
-fi
-EOF
+- Database data.
+- User-uploaded files.
+- Application configuration state.
 
-# Make script executable and schedule
-chmod +x ~/containers/health-check.sh
-echo "*/5 * * * * ~/containers/health-check.sh" | crontab -
-```
+Good practices:
 
-### Container Network Security
+- Do not keep critical data in temporary paths.
+- Use explicit volume naming.
+- Keep backup and restore process tested.
 
-#### Network Isolation Rules
-```bash
-# Create network security rules
-sudo ufw allow from 172.17.0.0/12 to any port 3306 comment 'Docker MySQL'
-sudo ufw allow from 172.17.0.0/12 to any port 6379 comment 'Docker Redis'
+## Network strategy
 
-# Block external access to internal services
-sudo ufw deny 3306
-sudo ufw deny 6379
-sudo ufw deny 8082
-```
+To avoid unnecessary exposure:
 
-### Performance Optimization
+- Public services in a public network behind the proxy.
+- Database only on private internal network.
+- Admin tools preferably non-public.
 
-#### Container Resource Limits
-```bash
-# Add resource limits to docker-compose.yml services
-# Example for Seafile service:
-deploy:
-  resources:
-    limits:
-      cpus: '2.0'
-      memory: 2G
-    reservations:
-      cpus: '1.0'
-      memory: 1G
-```
+If a service does not need internet-facing access, it should not be in the public network.
 
-### Troubleshooting Common Issues
+## Updating without downtime chaos
 
-#### Container Startup Issues
-```bash
-# Check container logs
-docker compose logs [service_name]
+Recommended flow:
 
-# Check container resource usage
-docker stats
+1. Read image changelog first.
+2. Create a backup snapshot.
+3. Update one service at a time.
+4. Check logs and health state.
+5. Roll back immediately if validation fails.
 
-# Verify network connectivity
-docker network ls
-docker network inspect frontend
-docker network inspect backend
-```
+## Common Docker mistakes
 
-#### Performance Issues
-```bash
-# Monitor container performance
-docker exec -it [container_name] top
-docker exec -it [container_name] df -h
-docker exec -it [container_name] free -m
-```
+1. Using latest everywhere without version control.
+2. Exposing internal ports for convenience.
+3. Storing secrets in public repositories.
+4. Not separating networks by traffic type.
+5. Not testing backup restoration.
 
-### Conclusion
+## Quality checklist per stack
 
-This comprehensive Docker services deployment provides a robust, scalable, and secure containerized infrastructure on the Orange Pi 5 Plus. The configuration includes essential services like cloud storage, database management, container orchestration, and reverse proxy with SSL termination.
+- Image version pinned.
+- Restart policy set.
+- Persistent volumes declared.
+- Networks separated by need.
+- Secrets kept outside public files.
+- Logs and health checks reviewed.
+- Backup and restore tested.
 
-The containerized approach offers improved resource utilization, easy service management, and simplified maintenance procedures while maintaining security and performance standards suitable for production environments.
+## Final recommendations
+
+- Keep stacks small and responsibility-focused.
+- Document each stack with purpose and dependencies.
+- Avoid deploying many major changes at once.
+- Prioritize operational stability over service quantity.
+
+## Note on fictional values
+
+Any sample domain, IP, user, port, path, or credential shown in this chapter is fictional.
+
+For real values, follow official Docker docs, proxy documentation, and each service's official documentation.

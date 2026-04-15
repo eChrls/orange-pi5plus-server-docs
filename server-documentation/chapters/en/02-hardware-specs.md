@@ -1,137 +1,141 @@
-# Hardware Specifications
+# 2. Hardware choice
 
-## Orange Pi 5 Plus - Complete Analysis
+## Why this hardware and not another option
 
-The Orange Pi 5 Plus represents a significant advancement in ARM64 single-board computers, offering professional server capabilities in a compact format.
+The decision was based on a simple goal: build a personal server that can run 24/7, handle real self-hosting workloads, and keep electricity cost under control.
 
-### Detailed Technical Specifications
+Three key points drove the choice:
 
-#### System on Chip (SoC)
-- **Processor**: Rockchip RK3588 Octa-core
-  - 4× ARM Cortex-A76 cores @ 2.4GHz (Performance)
-  - 4× ARM Cortex-A55 cores @ 1.8GHz (Efficiency)
-  - Advanced big.LITTLE architecture for optimal power efficiency
-- **GPU**: ARM Mali-G610 MP4
-  - OpenGL ES 3.2, OpenCL 2.2, Vulkan 1.1 support
-  - Hardware video encoding/decoding capabilities
-- **NPU**: 6 TOPS AI processing unit for machine learning applications
+- Enough memory for multiple services running at the same time.
+- Fast and large storage for personal cloud use.
+- Low average power draw for continuous operation.
 
-#### Memory and Storage
-- **RAM**: LPDDR5 memory options
-  - 4GB, 8GB, 16GB, or 32GB configurations available
-  - High bandwidth for demanding server applications
-- **Storage Options**:
-  - microSD card slot (up to 2TB)
-  - eMMC 5.1 module socket (up to 256GB)
-  - M.2 2280 NVMe SSD connector (PCIe 3.0 x4)
-  - Multiple storage tiers for performance optimization
+In practice, that means an ARM64 platform with 16 GB RAM and a 1 TB NVMe SSD.
 
-#### Connectivity
-- **Ethernet**: 2× 2.5 Gigabit Ethernet ports
-  - Realtek RTL8125BG controllers
-  - Ideal for network redundancy and high throughput
-- **USB Ports**:
-  - 4× USB 3.0 Type-A ports
-  - 1× USB 2.0 Type-A port
-  - 1× USB-C port (power + data)
-- **Display Outputs**:
-  - HDMI 2.1 port (up to 8K@60Hz)
-  - eDP 1.4 connector for embedded displays
-- **Audio**: 3.5mm audio jack with microphone input
+## Requirements defined before buying
 
-#### Expansion and I/O
-- **GPIO**: 40-pin GPIO header compatible with Raspberry Pi HATs
-- **Communication Interfaces**:
-  - UART, I2C, SPI, PWM signals available
-  - PCIe 3.0 x4 interface for high-speed expansion
-- **Camera Support**: MIPI CSI camera connector
-- **Debug Interface**: Debug UART for system development
+Before selecting hardware, minimum practical requirements were set to avoid short-term bottlenecks.
 
-### Performance Analysis
+| Area    | Recommended requirement     | Why it matters                                                   |
+| ------- | --------------------------- | ---------------------------------------------------------------- |
+| CPU     | 8 ARM64 cores or equivalent | Handle parallel services and background tasks                    |
+| RAM     | 16 GB                       | Self-hosting + smart-home + custom apps without early saturation |
+| Storage | 1 TB NVMe                   | Personal cloud, backups, media, and growth                       |
+| Network | Gigabit Ethernet or higher  | Stable remote access and transfers                               |
+| Power   | Low for 24/7 usage          | Lower monthly cost and lower sustained heat                      |
 
-#### CPU Benchmarks
-The RK3588's hybrid architecture provides excellent performance scaling:
-- **Multi-threaded Performance**: ~35,000 PassMark CPU score
-- **Single-thread Performance**: Competitive with mid-range x86 processors
-- **Power Efficiency**: Exceptional performance per watt ratio
+## What each component contributes
 
-#### Memory Performance
-- **Bandwidth**: LPDDR5 provides up to 51.2 GB/s theoretical bandwidth
-- **Latency**: Low latency crucial for server responsiveness
-- **Capacity**: Up to 32GB supports memory-intensive applications
+### ARM64 CPU
 
-#### Storage Performance
-- **NVMe SSD**: Up to 3,500 MB/s sequential read speeds
-- **eMMC**: Up to 300 MB/s for balanced performance/cost
-- **microSD**: Class 10 cards provide adequate boot performance
+A modern ARM64 CPU gives a strong balance between performance and efficiency.
 
-### Thermal Design
+For this type of server, that means:
 
-#### Heat Generation
-- **TDP**: Approximately 15W under maximum load
-- **Thermal Zones**: Multiple temperature sensors for monitoring
-- **Throttling**: Automatic frequency scaling to maintain safe temperatures
+- Good response in containers and web services.
+- Lower sustained heat than higher-consumption alternatives.
+- Better long-term energy cost.
 
-#### Cooling Solutions
-- **Passive Cooling**: Aluminum heatsink included
-- **Active Cooling**: Fan mounting points available
-- **Case Options**: Aluminum cases with thermal pads recommended
+### 16 GB RAM
 
-### Power Requirements
+The main reason for 16 GB was to avoid bottlenecks once multiple services coexist.
 
-#### Power Consumption
-- **Idle**: ~3W power consumption
-- **Typical Load**: 8-10W during normal server operations
-- **Maximum Load**: Up to 15W under stress testing
-- **Efficiency**: Excellent for 24/7 server operations
+Typical workload split (illustrative, fictional values used for sizing example):
 
-#### Power Supply
-- **Input**: USB-C PD or DC 5.5mm jack
-- **Voltage**: 5V DC input required
-- **Recommended**: 65W USB-C PD charger for full performance
-- **Compatibility**: Standard phone chargers sufficient for light loads
+| Block                     | Approximate RAM |
+| ------------------------- | --------------- |
+| Base system               | 1.5 to 2.5 GB   |
+| Infrastructure containers | 2 to 4 GB       |
+| Database + cache          | 1.5 to 3 GB     |
+| Application services      | 2 to 4 GB       |
+| Operating margin          | 2 to 4 GB       |
 
-### Comparison with Alternatives
+Recommendation: measure your real usage with monitoring tools instead of using these numbers as final production values.
 
-#### vs. Raspberry Pi 4
-- **CPU Performance**: ~3x faster multi-core performance
-- **Memory**: Up to 8x more RAM capacity
-- **Storage**: Native NVMe support vs. USB 3.0 only
-- **Network**: 2.5GbE vs. 1GbE networking
+### 1 TB NVMe SSD
 
-#### vs. Traditional x86 Servers
-- **Power Efficiency**: 10-20x lower power consumption
-- **Cost**: Significantly lower hardware costs
-- **Performance**: Adequate for most small-to-medium workloads
-- **Expandability**: Limited compared to full servers
+A 1 TB NVMe SSD was selected to keep enough real margin for mixed usage:
 
-### Recommended Configuration for Server Use
+- Personal cloud files, for example with Nextcloud.
+- Application data.
+- Temporary local backups.
+- Media libraries and working files.
 
-#### Optimal Setup
-- **Model**: Orange Pi 5 Plus 16GB RAM
-- **Storage**: 256GB NVMe SSD + 64GB eMMC
-- **Cooling**: Aluminum case with thermal pads
-- **Power**: 65W USB-C PD power supply
-- **Network**: Both Ethernet ports utilized
+Compared with slower storage, the improvement is visible in:
 
-#### Budget Alternative
-- **Model**: Orange Pi 5 Plus 8GB RAM
-- **Storage**: High-quality 128GB microSD card
-- **Cooling**: Standard heatsink with case ventilation
-- **Power**: 30W USB-C charger
-- **Network**: Single Ethernet connection
+- Service startup times.
+- Database response latency.
+- Sync and backup operations.
 
-### Hardware Limitations
+## Quick comparison of common options
 
-#### Considerations for Server Deployment
-- **Storage**: Limited to single NVMe drive
-- **Expansion**: PCIe slot not accessible in most cases
-- **Memory**: Non-upgradeable soldered RAM
-- **Redundancy**: Single point of failure considerations
+| Option             | Main advantage            | Main drawback                          | Fit for this project |
+| ------------------ | ------------------------- | -------------------------------------- | -------------------- |
+| High-end ARM64 SBC | Excellent 24/7 efficiency | More initial manual setup              | High                 |
+| x86 mini PC        | Broad compatibility       | Higher continuous power and cost       | Medium               |
+| Commercial NAS     | Easy integration          | Less flexibility for custom stacks     | Medium               |
+| Cloud VPS          | No local hardware         | Monthly cost and less physical control | Medium               |
 
-### Conclusion
+The final choice prioritizes full control, practical learning, and reasonable long-term energy use.
 
-The Orange Pi 5 Plus offers exceptional value for ARM64 server deployments, providing professional-grade performance in an energy-efficient package. While it has limitations compared to traditional servers, its capabilities are more than adequate for most small-to-medium scale applications, making it an ideal choice for cost-conscious server deployments.
+## 24/7 power and cost: how to estimate
 
-The hardware foundation is solid for running modern server workloads, containerized applications, and development environments, as demonstrated in the subsequent chapters of this documentation.
+To estimate yearly power usage:
 
+$$
+	ext{kWh/year} = \frac{\text{Average W} \times 24 \times 365}{1000}
+$$
+
+$$
+	ext{Yearly cost} = \text{kWh/year} \times \text{price per kWh}
+$$
+
+Fictional comparison example:
+
+- Device A: 12 W average.
+- Device B: 50 W average.
+- Electricity price: 0.20 per kWh.
+
+Approximate result:
+
+- Device A: 105.12 kWh/year -> 21.02 per year.
+- Device B: 438.00 kWh/year -> 87.60 per year.
+
+Over multiple years, this difference becomes a major part of the decision.
+
+## Software aligned with this hardware profile
+
+With this hardware baseline, it is realistic to run a stack such as:
+
+- Personal cloud: Nextcloud.
+- Smart home: Home Assistant.
+- Secure remote access: VPN.
+- Web publishing with containerized services.
+- Streaming and media catalog services.
+- Administration and monitoring tools.
+
+You do not need to deploy everything at once. The recommended path is phased rollout with stability checks at each step.
+
+## Recommended step-by-step method for choosing similar hardware
+
+1. Define real use cases for the next 12-24 months.
+2. Size RAM based on concurrency, not single-service usage.
+3. Size storage for data and backups, not only OS footprint.
+4. Calculate yearly power cost before purchasing.
+5. Confirm official OS support for your architecture.
+6. Verify ARM64 Docker image availability for planned services.
+
+## Practical precautions
+
+- Do not size hardware only to boot services; size it to operate with margin.
+- Do not rely on isolated benchmarks without realistic workload checks.
+- Do not assume universal compatibility; validate each target service on ARM64.
+- Do not publish hardware inventories with sensitive environment identifiers.
+
+## Where to read more
+
+- Official hardware datasheets from the vendor.
+- Official Ubuntu Server ARM64 documentation.
+- Official Docker documentation and each service's official docs.
+
+If a third-party guide conflicts with official docs, prioritize official documentation and controlled testing in your own environment.

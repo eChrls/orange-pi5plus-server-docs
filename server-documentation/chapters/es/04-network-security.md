@@ -1,128 +1,222 @@
-# 🔒 Configuración de Red y Seguridad
+# 4. Seguridad base
 
-## Contextualización del Problema
+## Objetivo del capitulo
 
-Un servidor expuesto a internet requiere múltiples capas de seguridad para prevenir accesos no autorizados. En proyectos empresariales, la seguridad no es opcional: es un requisito fundamental que demuestra comprensión de buenas prácticas profesionales.
+Este capitulo define una base de seguridad realista para un servidor personal en produccion continua.
 
-## Implementación de Seguridad Multicapa
+La meta es simple: reducir superficie de ataque, limitar impacto de errores y mantener una operacion estable sin volver el sistema inmantenible.
 
-### Configuración SSH Segura
-Reemplacé la configuración SSH por defecto con:
-- **Puerto no estándar**: Cambiado del puerto por defecto para reducir ataques automatizados
-- **Autenticación por clave**: Eliminé autenticación por contraseña, implementando claves asimétricas
-- **Restricciones de acceso**: Configuré white-list de usuarios autorizados
+## Enfoque de seguridad
 
-Esta configuración produjo una notable reducción en los intentos de intrusión, observada a través del análisis de logs del sistema con comandos como `journalctl -u ssh` y `grep "Failed password" /var/log/auth.log`.
+La seguridad se aplica en capas:
 
-### Firewall con UFW
-Implementé una política de firewall restrictiva:
-- **Deny por defecto**: Todo el tráfico bloqueado inicialmente
-- **Allow específico**: Solo servicios necesarios habilitados
-- **Logging activado**: Registro de intentos de conexión para monitoreo
+1. Acceso administrativo seguro.
+2. Exposicion minima de red.
+3. Proteccion automatica ante intentos de abuso.
+4. Cifrado de trafico publico.
+5. Revisiones periodicas.
 
-### Fail2Ban para Protección Activa
-Configuré Fail2Ban para protección automática contra ataques persistentes:
+## Herramientas recomendadas segun objetivo
 
-```bash
-# Instalación y configuración básica
-sudo apt install fail2ban
-sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+| Objetivo                      | Herramienta recomendada     | Cuándo usarla                                                | Nivel      |
+| ----------------------------- | --------------------------- | ------------------------------------------------------------ | ---------- |
+| Bloquear fuerza bruta         | Fail2Ban                    | Siempre que haya acceso remoto o paneles publicados          | Base       |
+| Reducir superficie de red     | Firewall del host           | Siempre, desde el primer dia                                 | Base       |
+| Cifrar trafico publico        | TLS en proxy reverso        | Siempre en servicios web publicados                          | Base       |
+| Revisar malware conocido      | ClamAV (escaneo programado) | Recomendable en servidores con ficheros subidos por usuarios | Intermedio |
+| Filtrar ataques web complejos | WAF (ejemplo: ModSecurity)  | Cuando hay formularios expuestos o riesgo alto de abuso web  | Avanzado   |
 
-# Configuración para SSH (ejemplo genérico)
-sudo tee /etc/fail2ban/jail.local > /dev/null <<EOF
-[sshd]
-enabled = true
-port = ssh
-filter = sshd
-logpath = /var/log/auth.log
-maxretry = 3
-bantime = 3600
-findtime = 600
-EOF
+Nota practica:
 
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
+- Para uso personal o selfhosting inicial, la base suele ser: firewall + Fail2Ban + HTTPS.
+- Si el servicio crece o recibe mucho trafico automatizado, conviene añadir WAF.
 
-# Verificación de bans activos
-sudo fail2ban-client status sshd
+## Capa 1: acceso administrativo
+
+### Recomendacion
+
+- Usar autenticacion por clave para administracion remota.
+- Desactivar acceso administrativo por contrasena en servicios expuestos.
+- Limitar usuarios con permisos de administracion.
+
+### Paso a paso
+
+1. Crear claves en el equipo cliente.
+2. Registrar clave publica en el servidor.
+3. Probar acceso por clave antes de endurecer mas.
+4. Aplicar endurecimiento de configuracion SSH.
+5. Reiniciar servicio y validar acceso real.
+
+### Precaucion
+
+Nunca cierres la sesion activa hasta confirmar que el nuevo acceso funciona.
+
+## Capa 2: control de red
+
+### Regla base
+
+Politica por defecto: bloquear entrada y abrir solo puertos necesarios.
+
+### Ejemplo de politica (valores ficticios)
+
+```text
+Entrada: denegada por defecto
+Salida: permitida por defecto
+Permitir solo:
+- SSH_ADMIN_PORT/tcp
+- 80/tcp
+- 443/tcp
 ```
 
-**Resultado**: Significativa reducción en intentos de fuerza bruta tras implementación, verificable mediante análisis de logs con `fail2ban-client status sshd`.
+### Paso a paso
 
-## Gestión de Certificados SSL
+1. Definir politica por defecto.
+2. Habilitar solo puertos de servicios necesarios.
+3. Activar logging del firewall.
+4. Verificar reglas efectivas.
 
-### Let's Encrypt para HTTPS
-Implementé certificados SSL gratuitos y automatizados:
-- **Renovación automática**: Evita expiración de certificados
-- **Múltiples dominios**: Soporte para varios subdominios
-- **Grado A+ de seguridad**: Validado mediante herramientas de testing SSL
+### Precaucion
 
-## Errores Cometidos y Correcciones
+No abras puertos de herramientas internas al exterior por comodidad.
 
-### Error #1: Configuración SSH por Defecto
-**Problema**: Inicialmente mantuve SSH en puerto estándar con autenticación por contraseña.
-**Impacto**: Múltiples intentos de intrusión detectados en las primeras 24 horas (verificables en `/var/log/auth.log`).
+## Capa 3: proteccion contra fuerza bruta
 
-```bash
-# MAL - Configuración inicial insegura
-# Puerto: 22, PasswordAuthentication: yes
+### Recomendacion
 
-# BIEN - Configuración endurecida
-sudo sed -i 's/#Port 22/Port [PUERTO_PERSONALIZADO]/' /etc/ssh/sshd_config
-sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-sudo sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-sudo systemctl restart ssh
-```
+Configurar bloqueo automatico de intentos repetidos en servicios criticos.
 
-**Lección**: Nunca mantener configuraciones por defecto en servicios expuestos.
+Herramienta habitual: Fail2Ban.
 
-### Error #2: Firewall Permisivo Inicial
-**Problema**: Dejé UFW con política ALLOW por defecto durante configuración.
-**Impacto**: Exposición innecesaria de servicios durante desarrollo.
+### Parametros tipicos (ejemplo inventado)
 
-```bash
-# Configuración correcta de firewall restrictivo
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow ssh/tcp
-sudo ufw allow http
-sudo ufw allow https
-sudo ufw --force enable
+| Parametro | Valor de ejemplo |
+| --------- | ---------------- |
+| maxretry  | 3                |
+| findtime  | 10 minutos       |
+| bantime   | 2 horas          |
 
-# Verificación de reglas
-sudo ufw status numbered
-```
+### Paso a paso
 
-**Lección**: Implementar "deny by default" desde el primer momento.
+1. Activar proteccion para acceso administrativo.
+2. Confirmar que lee logs correctos del sistema.
+3. Probar ban y unban en entorno controlado.
+4. Revisar estado del servicio periodicamente.
 
-### Error #3: Certificados Manuales
-**Problema**: Intenté configurar certificados SSL autofirmados inicialmente.
-**Impacto**: Warnings del navegador y pérdida de confianza profesional.
+### Precaucion
 
-```bash
-# Automatización con Let's Encrypt
-sudo apt install certbot python3-certbot-apache
-sudo certbot --apache -d [tu-dominio.com]
-sudo certbot renew --dry-run
+Asegura lista de exclusiones locales para no bloquear acceso legitimo desde tu red de administracion.
 
-# Renovación automática
-echo "0 12 * * * /usr/bin/certbot renew --quiet" | sudo crontab -
-```
+### Como implementarlo sin complicarte
 
-**Lección**: Las soluciones automatizadas son más confiables que procesos manuales.
+1. Empieza protegiendo solo acceso administrativo.
+2. Activa ban temporal corto y revisa falsos positivos.
+3. Ajusta umbrales de forma gradual.
+4. Amplia a otros servicios solo cuando ya tengas trazabilidad clara en logs.
 
-## Resultados de Seguridad
+Con este orden, reduces riesgo real sin romper accesos legitimos.
 
-- **Reducción de ataques**: Significativa disminución de intentos de intrusión tras hardening (verificable en logs)
-- **Calificación SSL**: A+ en tests de seguridad
-- **Disponibilidad**: Excelente uptime sin incidentes de seguridad reportados
-- **Respuesta automatizada**: Bloqueo de amenazas sin intervención manual
+## Capa 4: HTTPS y certificados
 
-## Competencias Técnicas Desarrolladas
+### Recomendacion
 
-Esta implementación demuestra comprensión de:
-- **Principios de seguridad**: Defensa en profundidad y mínimo privilegio
-- **Automatización**: Herramientas que reducen carga operacional
-- **Monitoreo proactivo**: Detección temprana de amenazas
-- **Buenas prácticas**: Configuraciones alineadas con estándares de la industria
+Todo servicio publico debe salir por HTTPS con certificados validos y renovacion automatica.
 
+### Flujo operativo
+
+1. El proxy recibe trafico publico.
+2. Solicita o renueva certificados automaticamente.
+3. Redirige HTTP a HTTPS.
+4. Aplica cabeceras de seguridad recomendadas.
+
+Herramientas comunes para esta capa:
+
+- Proxy dinamico con TLS automatico: Traefik.
+- Proxy con panel visual: Nginx Proxy Manager.
+
+La eleccion depende de tu perfil:
+
+- Si priorizas automatizacion por etiquetas y despliegue con contenedores, Traefik suele encajar mejor.
+- Si priorizas gestion visual desde panel web, Nginx Proxy Manager suele ser mas sencillo al principio.
+
+### Validaciones minimas
+
+- El dominio responde por HTTPS.
+- HTTP redirige a HTTPS.
+- El certificado no esta caducado.
+- La cadena de confianza es valida.
+
+## Capa 5: higiene operativa
+
+### Controles semanales recomendados
+
+- Estado de firewall.
+- Estado de proteccion contra fuerza bruta.
+- Certificados proximos a vencimiento.
+- Servicios criticos en ejecucion.
+- Espacio en disco y logs.
+
+Si usas ClamAV, incluye tambien:
+
+- Confirmar ejecucion del ultimo escaneo programado.
+- Revisar resumen del ultimo informe.
+- Validar que no haya bloqueos falsos en rutas de aplicacion.
+
+### Controles mensuales recomendados
+
+- Actualizaciones de seguridad.
+- Revision de puertos expuestos.
+- Prueba de restauracion de backup.
+- Revalidacion de cuentas y permisos.
+
+## Checklist de seguridad base
+
+- Acceso administrativo por clave activo.
+- Acceso por contrasena desactivado en servicios expuestos.
+- Firewall con politica restrictiva.
+- Solo puertos necesarios abiertos.
+- Proteccion automatica anti-fuerza-bruta activa.
+- Servicios publicos por HTTPS.
+- Renovacion de certificados automatizada.
+- Registro de eventos habilitado y revisado.
+
+## Errores frecuentes y como evitarlos
+
+1. Endurecer SSH sin probar acceso alternativo.
+2. Abrir puertos temporales y olvidarlos.
+3. Configurar HTTPS una vez y no revisar renovacion.
+4. Suponer que un servicio esta protegido sin validar logs.
+5. No documentar cambios de seguridad.
+
+## Recomendaciones finales
+
+- Empieza por controles simples y consistentes.
+- Automatiza solo lo que entiendes y puedes auditar.
+- Cambia una cosa cada vez y valida inmediatamente.
+- Manten un historial de cambios con fecha y motivo.
+
+## Guia rapida de stack por nivel
+
+### Nivel base (recomendado para empezar)
+
+- Firewall del host.
+- Fail2Ban para acceso administrativo.
+- Proxy reverso con HTTPS.
+- Backups probados.
+
+### Nivel intermedio
+
+- ClamAV con escaneo programado.
+- Alertas de estado y seguridad.
+- Reglas mas finas por servicio.
+
+### Nivel avanzado
+
+- WAF (por ejemplo ModSecurity) delante de servicios publicos.
+- Segmentacion de red mas estricta.
+- Revisiones de seguridad periodicas con checklist formal.
+
+## Nota sobre datos inventados
+
+En este capitulo, cualquier dominio, IP, usuario, puerto o ruta mostrados como ejemplo son datos inventados.
+
+Para configurar valores reales, usa documentacion oficial de cada herramienta y valida con comandos de inspeccion de tu propio entorno.

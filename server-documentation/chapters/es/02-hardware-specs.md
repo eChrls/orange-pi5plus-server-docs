@@ -1,247 +1,141 @@
-# 2. Especificaciones Hardware - Orange Pi 5 Plus
+# 2. Eleccion de hardware
 
-## 🔍 **Análisis de Requisitos Hardware**
+## Por que este hardware y no otro
 
-### **Criterios de Selección**
+La decision se tomo con una idea clara: montar un servidor personal que pueda estar encendido 24/7, con buen rendimiento real para selfhosting y sin disparar el coste electrico.
 
-Para este proyecto de servidor doméstico, se establecieron los siguientes requisitos:
+Los tres puntos clave fueron:
 
-| Criterio | Requisito Mínimo | Requisito Óptimo | Orange Pi 5 Plus |
-|----------|------------------|------------------|------------------|
-| **CPU** | 4 núcleos ARM64 | 8 núcleos ARM64 | ✅ 8 núcleos RK3588 |
-| **RAM** | 8GB | 16GB | ✅ 16GB LPDDR4X |
-| **Almacenamiento** | SSD 256GB | SSD 512GB+ | ✅ NVMe 916GB |
-| **Red** | Fast Ethernet | Gigabit Ethernet | ✅ Gigabit |
-| **Consumo** | <20W | <15W | ✅ ~12W típico |
-| **Precio** | <300€ | <200€ | ✅ ~180€ |
+- Memoria suficiente para ejecutar varios servicios a la vez.
+- Almacenamiento rapido y amplio para nube personal.
+- Consumo bajo para uso continuo.
 
-### **Alternativas Consideradas**
+En la practica, esto se traduce en una plataforma ARM64 con 16 GB de RAM y SSD NVMe de 1 TB.
 
-#### **Raspberry Pi 4/5**
-- ❌ **RAM limitada**: Máximo 8GB insuficiente para múltiples servicios
-- ❌ **Almacenamiento**: Solo microSD, rendimiento limitado
-- ❌ **CPU**: ARM Cortex-A72/A76 menos potente que RK3588
-- ✅ **Ecosistema**: Mayor soporte de comunidad
+## Requisitos que se definieron al principio
 
-#### **Mini PC x86**
-- ✅ **Rendimiento**: Superior en aplicaciones x86
-- ✅ **Compatibilidad**: Sin problemas de arquitectura ARM
-- ❌ **Consumo**: 50W+ vs 12W Orange Pi
-- ❌ **Precio**: 400€+ vs 180€ Orange Pi
+Antes de comprar, se fijaron requisitos minimos para no quedarse corto en pocos meses.
 
-#### **Servidor VPS Cloud**
-- ✅ **Mantenimiento**: Gestionado por proveedor
-- ✅ **Conectividad**: Mejor ancho de banda
-- ❌ **Costo mensual**: 20-50€/mes vs inversión única
-- ❌ **Control**: Limitaciones del proveedor
-- ❌ **Aprendizaje**: Menos experiencia en administración
+| Area           | Requisito recomendado         | Motivo                                                        |
+| -------------- | ----------------------------- | ------------------------------------------------------------- |
+| CPU            | 8 nucleos ARM64 o equivalente | Manejar varios servicios y tareas en paralelo                 |
+| RAM            | 16 GB                         | Selfhosting + domotica + apps propias sin saturacion temprana |
+| Almacenamiento | NVMe 1 TB                     | Nube personal, copias, medios y crecimiento                   |
+| Red            | Ethernet gigabit o superior   | Estabilidad en acceso remoto y transferencia                  |
+| Consumo        | Bajo para 24/7                | Reducir coste mensual y temperatura                           |
 
-## 🏗️ **Orange Pi 5 Plus - Especificaciones Detalladas**
+## Lo que aporta cada componente
 
-### **🔧 Procesador - Rockchip RK3588**
+### CPU ARM64
 
-```
-Arquitectura: ARM64 (aarch64)
-Cores: 8 núcleos en configuración big.LITTLE
-├── 4x ARM Cortex-A76 @ 2.4GHz (Performance)
-└── 4x ARM Cortex-A55 @ 1.8GHz (Efficiency)
+Una CPU ARM64 moderna ofrece un equilibrio muy bueno entre rendimiento y consumo.
 
-Características:
-├── 6nm manufacturing process
-├── NPU 6 TOPS para AI/ML
-├── GPU Mali-G610 MP4
-└── VPU: 8K@60fps decode, 8K@30fps encode
-```
+Para este tipo de servidor, eso significa:
 
-**Ventajas para servidor:**
-- ✅ **Eficiencia energética**: Arquitectura big.LITTLE optimiza consumo
-- ✅ **Rendimiento multihilo**: 8 núcleos para servicios concurrentes
-- ✅ **Arquitectura moderna**: 6nm process, tecnología reciente
-- ✅ **Linux nativo**: Soporte completo ARM64 en distribuciones modernas
+- Buena respuesta en contenedores y servicios web.
+- Menor calor sostenido frente a hardware de mayor consumo.
+- Coste energetico mas contenido a largo plazo.
 
-### **💾 Memoria - 16GB LPDDR4X**
+### RAM de 16 GB
 
-```
-Especificaciones:
-├── Capacidad: 16GB
-├── Tipo: LPDDR4X-4224
-├── Ancho de banda: 68.3 GB/s
-└── Configuración: Soldada (no expandible)
-```
+El motivo principal de elegir 16 GB fue evitar cuellos de botella cuando conviven varios servicios.
 
-**Análisis de capacidad:**
-```bash
-# Distribución típica de memoria en nuestro servidor:
-Sistema operativo (Ubuntu)     ~2GB
-Docker containers              ~4GB
-MySQL 8.0                      ~2GB
-Seafile + servicios           ~2GB
-Apache + PHP                   ~1GB
-Cache del sistema             ~3GB
-Disponible para desarrollo    ~2GB
-```
+Ejemplo tipico de carga (dato orientativo, inventado para explicar el dimensionado):
 
-### **💿 Almacenamiento - Dual Boot Setup**
+| Bloque                          | RAM aproximada |
+| ------------------------------- | -------------- |
+| Sistema base                    | 1.5 a 2.5 GB   |
+| Contenedores de infraestructura | 2 a 4 GB       |
+| Base de datos + cache           | 1.5 a 3 GB     |
+| Servicios de aplicacion         | 2 a 4 GB       |
+| Margen operativo                | 2 a 4 GB       |
 
-#### **NVMe SSD Principal**
-```
-Capacidad: 916GB utilizable
-Interface: M.2 2280 NVMe PCIe 3.0 x4
-Velocidad lectura: ~3,500 MB/s
-Velocidad escritura: ~2,800 MB/s
-Uso: Sistema root, aplicaciones, datos
-```
+Recomendacion: valida tus consumos reales con herramientas de monitorizacion en lugar de copiar estos valores como finales.
 
-#### **MicroSD Boot**
-```
-Capacidad: 58GB utilizable  
-Clase: U3 V30 (min 30MB/s escritura)
-Uso: Bootloader, kernel, rescue system
-```
+### NVMe de 1 TB
 
-**Ventajas del setup dual:**
-- ✅ **Velocidad**: NVMe para sistema operativo y aplicaciones
-- ✅ **Redundancia**: Boot desde microSD como respaldo
-- ✅ **Flexibilidad**: Fácil intercambio de sistemas desde microSD
-- ✅ **Recuperación**: Sistema de rescate independiente
+El SSD NVMe de 1 TB se eligio para dar margen real a un uso mixto:
 
-### **🌐 Conectividad de Red**
+- Nube personal (por ejemplo Nextcloud).
+- Datos de aplicaciones.
+- Backups locales temporales.
+- Recursos multimedia o ficheros de trabajo.
 
-```
-Ethernet: Gigabit (1000Base-T)
-├── Chip: Realtek RTL8211F
-├── Wake-on-LAN: Soportado
-└── Auto-negotiation: 10/100/1000
+Ademas, el salto de rendimiento frente a almacenamiento lento se nota en:
 
-WiFi: 802.11 ac dual-band
-├── Chip: AIC8800
-├── 2.4GHz + 5GHz
-└── Backup connectivity
-```
+- Arranque de servicios.
+- Tiempos de respuesta de base de datos.
+- Copias y sincronizaciones.
 
-**Configuración implementada:**
-- **Ethernet primario**: Conexión estable 24/7
-- **IP estática**: Configurada en router (`192.168.0.50`)
-- **WiFi backup**: Disponible pero no utilizado
+## Comparativa rapida de opciones
 
-### **⚡ Consumo Energético**
+| Opcion                 | Ventaja principal         | Desventaja principal                          | Encaje para este proyecto |
+| ---------------------- | ------------------------- | --------------------------------------------- | ------------------------- |
+| SBC ARM64 de gama alta | Muy buena eficiencia 24/7 | Mas trabajo manual inicial                    | Alto                      |
+| Mini PC x86            | Compatibilidad amplia     | Consumo y coste superiores en continuo        | Medio                     |
+| NAS comercial          | Integracion simple        | Menor flexibilidad para stacks personalizados | Medio                     |
+| VPS cloud              | Sin hardware local        | Coste mensual y menos control fisico          | Medio                     |
 
-```
-Mediciones reales:
-├── Idle: 8-10W
-├── Load normal: 12-15W  
-├── Peak load: 18-22W
-└── Con servicios activos: ~12W promedio
-```
+La eleccion final prioriza control total, aprendizaje real y coste energetico razonable.
 
-**Comparativa anual:**
-```bash
-Orange Pi 5 Plus: 12W × 24h × 365d = 105 kWh/año
-Mini PC x86:      60W × 24h × 365d = 525 kWh/año
-Diferencia:       420 kWh/año = ~84€ ahorro energético
-```
+## Consumo 24/7 y coste: como calcularlo
 
-## 🎯 **Justificación de la Elección**
+Para estimar coste anual:
 
-### **✅ Ventajas Decisivas**
+$$
+	ext{kWh/año} = \frac{\text{W promedio} \times 24 \times 365}{1000}
+$$
 
-#### **1. Relación Rendimiento/Consumo**
-El RK3588 ofrece rendimiento equivalente a un Intel i5 de generaciones anteriores con una fracción del consumo energético.
+$$
+	ext{Coste anual} = \text{kWh/año} \times \text{precio por kWh}
+$$
 
-#### **2. Arquitectura ARM64 Moderna**
-- **Docker nativo**: Imágenes ARM64 disponibles para todos los servicios necesarios
-- **Ubuntu LTS**: Soporte oficial ARM64 con actualizaciones hasta 2029
-- **Ecosistema maduro**: Herramientas de desarrollo completas
+Ejemplo inventado para comparar:
 
-#### **3. Escalabilidad**
-- **16GB RAM**: Suficiente para crecimiento futuro de servicios
-- **NVMe expandible**: Posibilidad de upgrade a 2TB+
-- **USB 3.0**: Almacenamiento externo para backups
+- Equipo A: 12 W promedio.
+- Equipo B: 50 W promedio.
+- Precio electricidad: 0.20 por kWh.
 
-#### **4. Precio/Valor**
-```
-Inversión inicial Orange Pi: ~180€
-Equivalente x86 Mini PC:     ~450€
-Ahorro inicial:              270€
+Resultado aproximado:
 
-Costo energético 3 años:
-Orange Pi: 105 kWh/año × 3 × 0.20€ = 63€
-Mini PC:   525 kWh/año × 3 × 0.20€ = 315€
-Ahorro energético:                    252€
+- Equipo A: 105.12 kWh/año -> 21.02 al año.
+- Equipo B: 438.00 kWh/año -> 87.60 al año.
 
-Ahorro total 3 años: 522€
-```
+La diferencia acumulada en varios años justifica la decision en escenarios 24/7.
 
-### **⚠️ Desafíos Superados**
+## Software que esta alineado con esta eleccion
 
-#### **1. Compatibilidad Software**
-- **Solución**: Ubuntu 24.04 LTS ARM64 con soporte completo
-- **Resultado**: Excelente compatibilidad con software x86 equivalente mediante containers ARM64 nativos
+Con esta base de hardware, es viable ejecutar un stack como:
 
-#### **2. Drivers Hardware**
-- **Problema inicial**: Errores kernel VOP2/MPP/HDMI
-- **Solución**: Identificados como cosmétivos en uso headless
-- **Resultado**: Sistema estable 24/7 sin impacto en rendimiento
+- Nube personal: Nextcloud.
+- Domotica: Home Assistant.
+- Acceso seguro remoto: VPN.
+- Publicacion de proyectos web en contenedores.
+- Streaming y catalogos multimedia.
+- Herramientas de administracion y monitorizacion.
 
-#### **3. Documentación Limitada**
-- **Desafío**: Menos recursos que Raspberry Pi
-- **Solución**: Documentación propia detallada
-- **Resultado**: Proceso replicable documentado
+No hace falta desplegar todo a la vez. Lo recomendable es crecer por fases y validar estabilidad en cada una.
 
-## 📊 **Rendimiento Real en Producción**
+## Paso a paso recomendado para elegir hardware similar
 
-### **Benchmarks del Sistema**
+1. Define tus casos de uso reales para 12-24 meses.
+2. Estima RAM segun concurrencia, no solo por servicio individual.
+3. Elige almacenamiento pensando en datos y copias, no solo en sistema operativo.
+4. Calcula consumo anual antes de comprar.
+5. Comprueba soporte oficial del sistema operativo para la arquitectura.
+6. Revisa disponibilidad de imagenes Docker para ARM64 de los servicios que quieres montar.
 
-```bash
-# CPU Performance (sysbench)
-CPU single-thread: 1,247 events/sec
-CPU multi-thread:  4,892 events/sec
+## Precauciones practicas
 
-# Memory Performance  
-Memory bandwidth: 11,234 MB/s sequential read
-Memory latency:   95ns average
+- Evita dimensionar solo para "arrancar"; dimensiona para operar con margen.
+- No bases la compra en benchmarks aislados sin carga real.
+- No supongas compatibilidad universal: valida cada servicio en ARM64.
+- No publiques inventario de hardware con identificadores sensibles del entorno.
 
-# Storage Performance
-NVMe sequential read:  3,421 MB/s
-NVMe sequential write: 2,787 MB/s
-NVMe random IOPS:      285K read, 125K write
-```
+## Donde ampliar informacion
 
-### **Métricas de Servicios Reales**
+- Fichas tecnicas oficiales del fabricante del hardware.
+- Documentacion oficial de Ubuntu Server para ARM64.
+- Documentacion oficial de Docker y de cada servicio que quieras desplegar.
 
-```bash
-# Apache + PHP 8.3
-Requests/sec: ~450 (load test)
-Response time: 25ms average
-Memory usage: 180MB typical
-
-# MySQL 8.0
-Query time: <5ms average
-Memory usage: 512MB typical
-Storage: 2.3GB databases
-
-# Docker Stack
-Total containers: 5 active
-Memory overhead: 256MB
-CPU overhead: Mínimo (< 5% observado con `htop`)
-```
-
-## 🔮 **Escalabilidad Futura**
-
-### **Upgrades Planificados**
-
-1. **Almacenamiento**: NVMe 2TB cuando sea necesario
-2. **Conectividad**: USB 3.0 para almacenamiento backup
-3. **Servicios**: Kubernetes cluster con múltiples Orange Pi
-4. **Monitorización**: Prometheus + Grafana para métricas avanzadas
-
-### **Limitaciones Conocidas**
-
-- **RAM no expandible**: 16GB es el límite hardware
-- **GPU limitada**: No adecuado para workloads gráficos intensivos  
-- **Single-board**: Sin redundancia hardware integrada
-
----
-
-> **💡 Conclusión**: La Orange Pi 5 Plus demostró ser la elección óptima para este proyecto, ofreciendo el equilibrio perfecto entre rendimiento, eficiencia energética, costo y capacidades de expansion para un servidor de desarrollo personal.
-
+Si hay discrepancias entre una guia externa y la documentacion oficial, prioriza siempre la documentacion oficial y pruebas controladas en tu entorno.
